@@ -46,7 +46,7 @@ a {
   box-shadow: var(--shadow-soft);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   padding: 0 32px;
   height: 72px;
   z-index: 10;
@@ -57,6 +57,12 @@ a {
   font-size: 28px;
   font-weight: 600;
   color: var(--primary-blue);
+}
+
+.app-logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
 }
 
 .app-main {
@@ -321,10 +327,15 @@ a {
   .app-header {
     height: auto;
     padding: 16px;
+    gap: 12px;
   }
 
   .app-title {
-    font-size: 24px;
+    font-size: 20px;
+  }
+
+  .app-logo {
+    height: 36px;
   }
 
   .app-main {

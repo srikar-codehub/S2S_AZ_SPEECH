@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import "./App.css";
 import azureLanguages from "./data/azure_languages.json";
+import logo from "./assets/logo-protiviti.png";
 
 // Hooks
 import { useAudioDevices } from "./hooks/useAudioDevices";
@@ -52,6 +53,7 @@ function App() {
     <div className="app-shell">
       <header className="app-header">
         <h1 className="app-title">Live Speech Translation</h1>
+        <img src={logo} alt="Protiviti Logo" className="app-logo" />
       </header>
 
       <main className="app-main">
