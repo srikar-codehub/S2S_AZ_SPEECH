@@ -40,7 +40,7 @@ export const LogsDisplay = ({ logs, onClear }) => {
     <div className="logs-section">
       <div className="logs-header" onClick={toggleExpanded}>
         <h3 className="logs-title">
-          Event Logs ({logs.length})
+          Event Logs
         </h3>
         <div className="logs-controls">
           {logs.length > 0 && (
