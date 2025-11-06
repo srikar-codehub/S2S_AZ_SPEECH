@@ -5,7 +5,8 @@ export const StatusDisplay = ({
   sourceLanguageName,
   targetLanguageName,
   onStart,
-  onStop
+  onStop,
+  onCountdownChange
 }) => {
   const [countdownDuration, setCountdownDuration] = useState(() => {
     const saved = localStorage.getItem('countdownDuration');
@@ -14,11 +15,16 @@ export const StatusDisplay = ({
   const [countdownValue, setCountdownValue] = useState(null);
   const [isCountingDown, setIsCountingDown] = useState(false);
   const intervalRef = useRef(null);
+  const prevCountdownDurationRef = useRef(countdownDuration);
 
-  // Save countdown duration to localStorage
+  // Save countdown duration to localStorage and notify parent
   useEffect(() => {
     localStorage.setItem('countdownDuration', countdownDuration.toString());
-  }, [countdownDuration]);
+    if (prevCountdownDurationRef.current !== countdownDuration && onCountdownChange) {
+      onCountdownChange(prevCountdownDurationRef.current, countdownDuration);
+    }
+    prevCountdownDurationRef.current = countdownDuration;
+  }, [countdownDuration, onCountdownChange]);
 
   // Cleanup interval on unmount
   useEffect(() => {

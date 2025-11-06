@@ -44,6 +44,7 @@ function App() {
   const prevOutputDeviceRef = useRef(audioDevices.selectedOutputDevice);
   const prevSourceTextRef = useRef("");
   const prevTranslatedTextRef = useRef("");
+  const prevListeningRef = useRef(false);
 
   const { listening, startTranslation, stopTranslation } = useAzureTranslation({
     sourceLanguage,
@@ -63,13 +64,12 @@ function App() {
 
   // Log listening state changes
   useEffect(() => {
-    if (listening) {
+    if (listening && !prevListeningRef.current) {
       addLog('status', 'Listening started');
-    } else {
-      if (prevSourceTextRef.current !== "" || prevTranslatedTextRef.current !== "") {
-        addLog('status', 'Translation stopped');
-      }
+    } else if (!listening && prevListeningRef.current) {
+      addLog('status', 'Translation stopped');
     }
+    prevListeningRef.current = listening;
   }, [listening, addLog]);
 
   // Log source text changes (final results only)
@@ -145,6 +145,11 @@ function App() {
     prevOutputDeviceRef.current = audioDevices.selectedOutputDevice;
   }, [audioDevices.selectedOutputDevice, audioDevices.audioOutputDevices, addLog]);
 
+  // Handle countdown duration change
+  const handleCountdownChange = (prevValue, newValue) => {
+    addLog('settings', `Countdown duration changed: ${prevValue}s → ${newValue}s`);
+  };
+
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -172,6 +177,7 @@ function App() {
             targetLanguageName={targetLanguageName}
             onStart={startTranslation}
             onStop={stopTranslation}
+            onCountdownChange={handleCountdownChange}
           />
 
           <AudioDeviceSelector
