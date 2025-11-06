@@ -180,6 +180,113 @@ a {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
+.status-button--cancel {
+  background: var(--warning);
+}
+
+.status-button--cancel:hover {
+  background: #d97706;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Countdown Styles */
+.countdown-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.countdown-number {
+  font-size: 72px;
+  font-weight: 700;
+  color: var(--primary-blue);
+  line-height: 1;
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+@keyframes countdown-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.countdown-message {
+  margin: 12px 0 0 0;
+  font-size: 14px;
+  color: var(--accent-gray);
+  font-weight: 500;
+}
+
+.countdown-duration-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.countdown-duration-input {
+  width: 80px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-color);
+  background: #ffffff;
+  text-align: center;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.countdown-duration-input:focus {
+  outline: none;
+  border-color: var(--secondary-blue);
+  box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.2);
+}
+
+.countdown-duration-presets {
+  display: flex;
+  gap: 8px;
+}
+
+.countdown-preset-btn {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.countdown-preset-btn:hover {
+  border-color: var(--secondary-blue);
+  background: rgba(91, 155, 213, 0.05);
+}
+
+.countdown-preset-btn--active {
+  background: var(--primary-blue);
+  border-color: var(--primary-blue);
+  color: #ffffff;
+}
+
+.countdown-preset-btn--active:hover {
+  background: #002f4a;
+  border-color: #002f4a;
+}
+
+.status-dot--countdown {
+  background: var(--warning);
+  animation: pulse 2s infinite;
+}
+
 .config-card {
   background: var(--surface);
   border: 1px solid rgba(15, 23, 42, 0.08);
