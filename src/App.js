@@ -16,6 +16,12 @@ function App() {
   const [targetLanguage, setTargetLanguage] = useState("fr");
   const [selectedVoice, setSelectedVoice] = useState("");
 
+  // Audio device states
+  const [audioInputDevices, setAudioInputDevices] = useState([]);
+  const [audioOutputDevices, setAudioOutputDevices] = useState([]);
+  const [selectedInputDevice, setSelectedInputDevice] = useState("");
+  const [selectedOutputDevice, setSelectedOutputDevice] = useState("");
+
   const translatorRef = useRef(null);
   const synthesizerRef = useRef(null);
 
@@ -83,6 +89,36 @@ function App() {
     return `${langCode}-${langCode.toUpperCase()}`;
   };
 
+  // Enumerate audio devices
+  useEffect(() => {
+    const enumerateDevices = async () => {
+      try {
+        // Request microphone permission first
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+
+        const inputDevices = devices.filter(device => device.kind === 'audioinput');
+        const outputDevices = devices.filter(device => device.kind === 'audiooutput');
+
+        setAudioInputDevices(inputDevices);
+        setAudioOutputDevices(outputDevices);
+
+        // Set default devices
+        if (inputDevices.length > 0 && !selectedInputDevice) {
+          setSelectedInputDevice(inputDevices[0].deviceId);
+        }
+        if (outputDevices.length > 0 && !selectedOutputDevice) {
+          setSelectedOutputDevice(outputDevices[0].deviceId);
+        }
+      } catch (err) {
+        console.error("Error enumerating devices:", err);
+      }
+    };
+
+    enumerateDevices();
+  }, [selectedInputDevice, selectedOutputDevice]);
+
   // Set default voice when target language changes
   useEffect(() => {
     if (availableVoices.length > 0) {
@@ -146,7 +182,10 @@ function App() {
     translationConfig.speechSynthesisOutputFormat =
       SpeechSDK.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3;
 
-    const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+    // Use selected audio input device or default
+    const audioConfig = selectedInputDevice
+      ? SpeechSDK.AudioConfig.fromMicrophoneInput(selectedInputDevice)
+      : SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
 
     const translator = new SpeechSDK.TranslationRecognizer(
       translationConfig,
@@ -340,28 +379,66 @@ function App() {
           </div>
         </div>
 
-        {/* Status Card */}
-        <div className="status-card">
-          <div className="status-header">
-            <div className={`status-dot ${listening ? 'status-dot--listening' : 'status-dot--idle'}`} />
-            <h2 className="status-title">
-              {listening ? 'Listening' : 'Ready'}
-            </h2>
+        {/* Status and Audio Device Controls */}
+        <div className="control-grid">
+          <div className="status-card">
+            <div className="status-header">
+              <div className={`status-dot ${listening ? 'status-dot--listening' : 'status-dot--idle'}`} />
+              <h2 className="status-title">
+                {listening ? 'Listening' : 'Ready'}
+              </h2>
+            </div>
+            <p className="status-message">
+              {listening
+                ? `Listening in ${sourceLanguageName} and translating to ${targetLanguageName}...`
+                : 'Click Start to begin translation'}
+            </p>
+            {!listening ? (
+              <button className="status-button" onClick={startTranslation}>
+                Start Translation
+              </button>
+            ) : (
+              <button className="status-button status-button--stop" onClick={stopTranslation}>
+                Stop Translation
+              </button>
+            )}
           </div>
-          <p className="status-message">
-            {listening
-              ? `Listening in ${sourceLanguageName} and translating to ${targetLanguageName}...`
-              : 'Click Start to begin translation'}
-          </p>
-          {!listening ? (
-            <button className="status-button" onClick={startTranslation}>
-              Start Translation
-            </button>
-          ) : (
-            <button className="status-button status-button--stop" onClick={stopTranslation}>
-              Stop Translation
-            </button>
-          )}
+
+          <div className="status-card">
+            <h3 className="status-title">Audio Devices</h3>
+
+            <div className="form-field">
+              <label className="form-label">Microphone Input</label>
+              <select
+                className="form-select"
+                value={selectedInputDevice}
+                onChange={(e) => setSelectedInputDevice(e.target.value)}
+                disabled={listening}
+              >
+                {audioInputDevices.map(device => (
+                  <option key={device.deviceId} value={device.deviceId}>
+                    {device.label || `Microphone ${device.deviceId.slice(0, 5)}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-field">
+              <label className="form-label">Audio Output</label>
+              <select
+                className="form-select"
+                value={selectedOutputDevice}
+                onChange={(e) => setSelectedOutputDevice(e.target.value)}
+                disabled={listening}
+              >
+                {audioOutputDevices.map(device => (
+                  <option key={device.deviceId} value={device.deviceId}>
+                    {device.label || `Speaker ${device.deviceId.slice(0, 5)}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Text Display Cards */}

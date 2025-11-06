@@ -81,11 +81,12 @@ a {
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-soft);
-  padding: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+  min-height: 180px;
 }
 
 .status-card:hover {
@@ -129,7 +130,7 @@ a {
 
 .status-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-color);
 }
@@ -146,7 +147,7 @@ a {
   color: #ffffff;
   border: none;
   border-radius: var(--radius-input);
-  padding: 12px 28px;
+  padding: 10px 24px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
