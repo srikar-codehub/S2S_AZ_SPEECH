@@ -1,5 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
+import "./App.css";
+import azureLanguages from "./data/azure_languages.json";
+import azureVoices from "./data/azure_voices.json";
 
 function App() {
   const [listening, setListening] = useState(false);
@@ -7,19 +10,117 @@ function App() {
   const [translatedText, setTranslatedText] = useState("");
   const [latestAudioUrl, setLatestAudioUrl] = useState(null);
   const [error, setError] = useState("");
+
+  // Language and voice selection states
+  const [sourceLanguage, setSourceLanguage] = useState("en");
+  const [targetLanguage, setTargetLanguage] = useState("fr");
+  const [selectedVoice, setSelectedVoice] = useState("");
+
   const translatorRef = useRef(null);
   const synthesizerRef = useRef(null);
-  const stopTimerRef = useRef(null);
+
+  // Helper function to get voice locale codes for a language
+  const getVoiceLocalesForLanguage = (languageCode) => {
+    const matchingLocales = [];
+    const baseLanguage = languageCode.split('-')[0];
+
+    for (const locale in azureVoices) {
+      if (locale.startsWith(baseLanguage + '-')) {
+        matchingLocales.push(locale);
+      }
+    }
+
+    // Special handling for Chinese variants
+    if (languageCode === 'zh-Hans') {
+      return matchingLocales.filter(l => l === 'zh-CN' || l.startsWith('zh-CN-'));
+    }
+
+    if (languageCode === 'zh-Hant') {
+      return matchingLocales.filter(l => l === 'zh-TW' || l === 'zh-HK');
+    }
+
+    // For exact locale matches
+    if (languageCode.includes('-') && matchingLocales.includes(languageCode)) {
+      return [languageCode];
+    }
+
+    return matchingLocales;
+  };
+
+  // Get available voices for the selected target language
+  const availableVoices = useMemo(() => {
+    const locales = getVoiceLocalesForLanguage(targetLanguage);
+    const voices = locales.flatMap(locale =>
+      (azureVoices[locale] || []).map(voice => ({
+        ...voice,
+        locale: locale
+      }))
+    );
+
+    // Sort: Female voices first, then alphabetically by name
+    return voices.sort((a, b) => {
+      if (a.gender !== b.gender) {
+        return a.gender === 'Female' ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [targetLanguage]);
+
+  // Get the locale code for source language (for speech recognition)
+  const getSourceLocale = (langCode) => {
+    const locales = getVoiceLocalesForLanguage(langCode);
+    // Default to first available locale or construct a common one
+    if (locales.length > 0) {
+      // Prefer US for English, FR for French, etc.
+      const preferredLocale = locales.find(l =>
+        l === `${langCode}-US` ||
+        l === `${langCode.toUpperCase()}-${langCode.toUpperCase()}`||
+        l.startsWith(langCode.split('-')[0] + '-')
+      );
+      return preferredLocale || locales[0];
+    }
+    // Fallback: try to construct a locale
+    return `${langCode}-${langCode.toUpperCase()}`;
+  };
+
+  // Set default voice when target language changes
+  useEffect(() => {
+    if (availableVoices.length > 0) {
+      // Default to first female voice or first voice available
+      const defaultVoice = availableVoices.find(v => v.gender === 'Female') || availableVoices[0];
+      setSelectedVoice(defaultVoice.short_name);
+    } else {
+      setSelectedVoice("");
+    }
+  }, [availableVoices]);
+
+  // Prepare language options for dropdowns
+  const languageOptions = useMemo(() => {
+    return Object.entries(azureLanguages)
+      .map(([code, data]) => ({
+        value: code,
+        label: data.name === data.nativeName
+          ? data.name
+          : `${data.name} (${data.nativeName})`
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, []);
 
   const startTranslation = () => {
     const speechKey = process.env.REACT_APP_SPEECH_KEY;
     const serviceRegion = process.env.REACT_APP_SPEECH_REGION;
 
     if (!speechKey || !serviceRegion) {
-      alert("Missing Azure Speech key or region in .env");
+      setError("Missing Azure Speech key or region in .env");
       return;
     }
+
     if (listening) {
+      return;
+    }
+
+    if (!selectedVoice) {
+      setError("Please select a voice for the target language");
       return;
     }
 
@@ -32,9 +133,16 @@ function App() {
         speechKey,
         serviceRegion
       );
-    translationConfig.speechRecognitionLanguage = "en-US"; // You speak English
-    translationConfig.addTargetLanguage("fr"); // Translate to French
-    translationConfig.voiceName = "fr-FR-DeniseNeural";
+
+    // Set source language for speech recognition
+    const sourceLocale = getSourceLocale(sourceLanguage);
+    translationConfig.speechRecognitionLanguage = sourceLocale;
+
+    // Set target language for translation
+    translationConfig.addTargetLanguage(targetLanguage.split('-')[0]); // Use base language code
+
+    // Set voice for synthesis
+    translationConfig.voiceName = selectedVoice;
     translationConfig.speechSynthesisOutputFormat =
       SpeechSDK.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3;
 
@@ -70,18 +178,20 @@ function App() {
       ) {
         return;
       }
-      const french = e.result.translations.get("fr");
-      if (!french) {
+
+      const targetLangCode = targetLanguage.split('-')[0];
+      const translated = e.result.translations.get(targetLangCode);
+      if (!translated) {
         return;
       }
-      setTranslatedText(french);
+      setTranslatedText(translated);
 
       const activeSynthesizer = synthesizerRef.current;
       if (!activeSynthesizer) {
         return;
       }
       activeSynthesizer.speakTextAsync(
-        french,
+        translated,
         (result) => {
           if (
             result.reason ===
@@ -152,44 +262,153 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Get source and target language display names
+  const sourceLanguageName = azureLanguages[sourceLanguage]?.name || sourceLanguage;
+  const targetLanguageName = azureLanguages[targetLanguage]?.name || targetLanguage;
+
   return (
-    <div style={{ padding: 32, fontFamily: "sans-serif" }}>
-      <h2>🎤 Live English → French Speech Translation</h2>
+    <div className="app-shell">
+      <header className="app-header">
+        <h1 className="app-title">Live Speech Translation</h1>
+      </header>
 
-      {!listening ? (
-        <button onClick={startTranslation}>Start Talking</button>
-      ) : (
-        <div>
-          <p>Listening… Speak now.</p>
-          <button onClick={stopTranslation} style={{ marginTop: 8 }}>
-            Stop
-          </button>
-        </div>
-      )}
+      <main className="app-main">
+        {/* Configuration Card */}
+        <div className="config-card">
+          <h2 className="section-title">Translation Settings</h2>
+          <div className="config-grid">
+            <div className="form-field">
+              <label className="form-label" htmlFor="source-language">
+                Source Language
+              </label>
+              <select
+                id="source-language"
+                className="form-select"
+                value={sourceLanguage}
+                onChange={(e) => setSourceLanguage(e.target.value)}
+                disabled={listening}
+              >
+                {languageOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      <h3>Detected Speech (English)</h3>
-      <div style={{ background: "#eee", padding: 12 }}>{sourceText}</div>
+            <div className="form-field">
+              <label className="form-label" htmlFor="target-language">
+                Target Language
+              </label>
+              <select
+                id="target-language"
+                className="form-select"
+                value={targetLanguage}
+                onChange={(e) => setTargetLanguage(e.target.value)}
+                disabled={listening}
+              >
+                {languageOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      <h3>Translated (French)</h3>
-      <div style={{ background: "#dfffd6", padding: 12 }}>{translatedText}</div>
-
-      {latestAudioUrl ? (
-        <div style={{ marginTop: 16 }}>
-          <h4>Latest Translation Audio</h4>
-          <audio controls src={latestAudioUrl} />
-          <div>
-            <a href={latestAudioUrl} download="translation.mp3">
-              Download MP3
-            </a>
+            <div className="form-field">
+              <label className="form-label" htmlFor="voice-select">
+                Neural Voice
+              </label>
+              <select
+                id="voice-select"
+                className="form-select"
+                value={selectedVoice}
+                onChange={(e) => setSelectedVoice(e.target.value)}
+                disabled={listening || availableVoices.length === 0}
+              >
+                {availableVoices.length === 0 ? (
+                  <option value="">No voices available</option>
+                ) : (
+                  availableVoices.map(voice => (
+                    <option key={voice.short_name} value={voice.short_name}>
+                      {voice.name} - {voice.gender}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
           </div>
         </div>
-      ) : null}
 
-      {error ? (
-        <div style={{ marginTop: 16, color: "red" }}>
-          <strong>Error:</strong> {error}
+        {/* Status Card */}
+        <div className="status-card">
+          <div className="status-header">
+            <div className={`status-dot ${listening ? 'status-dot--listening' : 'status-dot--idle'}`} />
+            <h2 className="status-title">
+              {listening ? 'Listening' : 'Ready'}
+            </h2>
+          </div>
+          <p className="status-message">
+            {listening
+              ? `Listening in ${sourceLanguageName} and translating to ${targetLanguageName}...`
+              : 'Click Start to begin translation'}
+          </p>
+          {!listening ? (
+            <button className="status-button" onClick={startTranslation}>
+              Start Translation
+            </button>
+          ) : (
+            <button className="status-button status-button--stop" onClick={stopTranslation}>
+              Stop Translation
+            </button>
+          )}
         </div>
-      ) : null}
+
+        {/* Text Display Cards */}
+        <div className="control-grid">
+          <div className="text-display-card">
+            <h3 className="text-display-title">
+              Detected Speech ({sourceLanguageName})
+            </h3>
+            <div className="text-display-content">
+              {sourceText || "Speak to see detected speech..."}
+            </div>
+          </div>
+
+          <div className="text-display-card">
+            <h3 className="text-display-title">
+              Translated ({targetLanguageName})
+            </h3>
+            <div className="text-display-content text-display-content--translated">
+              {translatedText || "Translation will appear here..."}
+            </div>
+          </div>
+        </div>
+
+        {/* Audio Section */}
+        {latestAudioUrl && (
+          <div className="audio-section">
+            <h3 className="audio-title">Latest Translation Audio</h3>
+            <div className="audio-controls">
+              <audio className="audio-player" controls src={latestAudioUrl} />
+              <a
+                href={latestAudioUrl}
+                download="translation.mp3"
+                className="download-link"
+              >
+                Download MP3
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="error-message">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
