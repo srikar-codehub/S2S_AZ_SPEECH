@@ -21,6 +21,7 @@ export const useAzureTranslation = ({
   const [listening, setListening] = useState(false);
   const translatorRef = useRef(null);
   const synthesizerRef = useRef(null);
+  const audioElementRef = useRef(null);
 
   const startTranslation = () => {
     try {
@@ -66,7 +67,9 @@ export const useAzureTranslation = ({
       );
       translatorRef.current = translator;
 
-      const synthesizer = new SpeechSDK.SpeechSynthesizer(translationConfig);
+      // Create synthesizer with null audio config to prevent auto-playback
+      // This allows us to control playback through our own audio element
+      const synthesizer = new SpeechSDK.SpeechSynthesizer(translationConfig, null);
       synthesizerRef.current = synthesizer;
 
       setListening(true);
@@ -116,6 +119,16 @@ export const useAzureTranslation = ({
               const audioBuffer = result.audioData;
               const blob = createAudioBlob(audioBuffer);
               onAudioGenerated(blob);
+
+              // Create and play audio through a controlled audio element
+              if (!audioElementRef.current) {
+                audioElementRef.current = new Audio();
+              }
+              const audioUrl = URL.createObjectURL(blob);
+              audioElementRef.current.src = audioUrl;
+              audioElementRef.current.play().catch(err => {
+                console.error('Audio playback error:', err);
+              });
             } else if (
               result.reason === SpeechSDK.ResultReason.Canceled &&
               result.errorDetails
@@ -159,6 +172,14 @@ export const useAzureTranslation = ({
       synthesizer.close();
       synthesizerRef.current = null;
     }
+
+    // Stop and cleanup audio playback
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.currentTime = 0;
+      audioElementRef.current.src = '';
+    }
+
     setListening(false);
   };
 
