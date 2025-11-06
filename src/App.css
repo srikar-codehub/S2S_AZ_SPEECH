@@ -420,6 +420,177 @@ a {
   text-decoration: underline;
 }
 
+/* Logs Section Styles */
+.logs-section {
+  background: var(--surface);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.logs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s ease;
+}
+
+.logs-header:hover {
+  opacity: 0.8;
+}
+
+.logs-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-blue);
+}
+
+.logs-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clear-logs-btn {
+  background: var(--error);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-input);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.clear-logs-btn:hover {
+  background: #c92525;
+}
+
+.logs-chevron {
+  font-size: 12px;
+  color: var(--accent-gray);
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+.logs-chevron--expanded {
+  transform: rotate(180deg);
+}
+
+.logs-container {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px;
+  background: #f9fafb;
+  border-radius: var(--radius-input);
+}
+
+.logs-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--accent-gray);
+  font-size: 14px;
+}
+
+.log-entry {
+  background: #ffffff;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 13px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.log-entry:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.log-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.log-timestamp {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--accent-gray);
+  font-weight: 500;
+}
+
+.log-type {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.log-message {
+  color: var(--text-color);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* Log Type Variants */
+.log-entry--status {
+  border-left-color: var(--primary-blue);
+}
+
+.log-entry--status .log-type {
+  background: rgba(0, 59, 92, 0.1);
+  color: var(--primary-blue);
+}
+
+.log-entry--speech {
+  border-left-color: var(--success);
+}
+
+.log-entry--speech .log-type {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--success);
+}
+
+.log-entry--translation {
+  border-left-color: #9333ea;
+}
+
+.log-entry--translation .log-type {
+  background: rgba(147, 51, 234, 0.1);
+  color: #9333ea;
+}
+
+.log-entry--settings {
+  border-left-color: var(--accent-gray);
+}
+
+.log-entry--settings .log-type {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--accent-gray);
+}
+
+.log-entry--error {
+  border-left-color: var(--error);
+}
+
+.log-entry--error .log-type {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
 .error-message {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid var(--error);
